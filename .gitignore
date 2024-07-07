@@ -1,0 +1,8 @@
+dist
+build
+venv
+
+.env
+db.db
+mandelbrot.ico
+MandelbrotInstaller.exe
