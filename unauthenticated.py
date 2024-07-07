@@ -1,6 +1,7 @@
 import requests
 import sqlite3
 import datetime
+from dotenv import load_dotenv
 import os 
 from general import resource_path
 
@@ -8,9 +9,13 @@ from general import resource_path
 basedir = os.path.dirname(__file__)
 db_path = os.path.join(basedir, 'db.db')
 
+load_dotenv()
+
+base_url = os.environ['BASE_URL']
+
 def login(username, password):
     try:
-        response = requests.post('http://127.0.0.1:8000/authentication/apis/jwt/login/', {
+        response = requests.post(f'{base_url}authentication/apis/jwt/login/', {
             "username": username,
             "password": password
         })
