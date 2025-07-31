@@ -9,19 +9,19 @@ from general import resource_path
 basedir = os.path.dirname(__file__)
 db_path = os.path.join(basedir, 'db.db')
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(basedir, '.env'))
 
-base_url = os.environ['BASE_URL']
+base_url = os.environ['AUTH_BASE_URL']
 
-def login(username, password):
+def login(email, password):
     try:
-        response = requests.post(f'{base_url}authentication/apis/jwt/login/', {
-            "username": username,
+        response = requests.post(f'{base_url}login/', {
+            "email": email,
             "password": password
         })
 
         if response.status_code == 200:
-            return save_auth_credentials(username, response.json())
+            return save_auth_credentials(email, response.json())
 
         else:
             return "something went wrong"
@@ -29,7 +29,7 @@ def login(username, password):
     except requests.exceptions.ConnectionError:
         return "server is currently down"
  
-def save_auth_credentials(username, creds):
+def save_auth_credentials(email, creds):
     con = sqlite3.connect(resource_path('db.db'))
     cursor = con.cursor()
 
@@ -38,17 +38,17 @@ def save_auth_credentials(username, creds):
     """)
 
     if len(res.fetchall()) == 0:
-         cursor.execute("CREATE TABLE user(username TEXT NOT NULL UNIQUE,access_token TEXT NOT NULL, refresh_token TEXT NOT NULL)")
+         cursor.execute("CREATE TABLE user(email TEXT NOT NULL UNIQUE,access_token TEXT NOT NULL, refresh_token TEXT NOT NULL)")
 
     
-    user = cursor.execute(f"SELECT username FROM user WHERE username = '{username}'")
+    user = cursor.execute(f"SELECT email FROM user WHERE email = '{email}'")
     if len(user.fetchall()) == 1:
         cursor.execute(f"""
-        UPDATE user SET access_token='{creds['access']}', refresh_token='{creds['refresh']}' WHERE username = '{username}'
+        UPDATE user SET access_token='{creds['access']}', refresh_token='{creds['refresh']}' WHERE email = '{email}'
         """)
     else:
         cursor.execute(f"""
-        INSERT INTO user VALUES('{username}', '{creds['access']}', '{creds['refresh']}')
+        INSERT INTO user VALUES('{email}', '{creds['access']}', '{creds['refresh']}')
         """)
 
     con.commit()
@@ -90,7 +90,7 @@ def create_tables(only=True, cursor=None):
         list_id INTEGER PRIMARY KEY NOT NULL,
         title TEXT NOT NULL,
         date TEXT NOT NULL,
-        done INTEGER DEFAULT 0
+        status INTEGER DEFAULT 0
         )
         """)
 
@@ -107,7 +107,7 @@ def create_tables(only=True, cursor=None):
         mission_id INTEGER PRIMARY KEY NOT NULL,
         list_id INTEGER NOT NULL,
         content TEXT NOT NULL,
-        done INTEGER DEFAULT 0
+        status INTEGER DEFAULT 0
         )
         """)
     
@@ -207,7 +207,7 @@ def get_today_list():
     if not list_exists or not mission_exists:
         create_tables(only=False, cursor=cursor)
 
-        return {'title': '', 'tasks': []}
+        return {'title': '', 'missions': []}
 
     res_1 = cursor.execute(f"""
             SELECT * FROM list WHERE date = '{str(today_date)}'
@@ -223,12 +223,12 @@ def get_today_list():
         data = {
             'id': list_data[0],
             'title': list_data[1],
-            'tasks': [{'content': mission[2], 'done': mission[3], 'id': mission[0]} for mission in missions_data]
+            'missions': [{'content': mission[2], 'status':'done' if mission[3] == 1 else 'pending', 'id': mission[0]} for mission in missions_data]
         }
 
         return data
 
-    return {'title': '', 'tasks': []}
+    return {'title': '', 'missions': []}
     
 
 
@@ -259,7 +259,7 @@ def get_list(list_id):
             "id": mission[0],
             "list_id": mission[1],
             "content": mission[2],
-            "done": (mission[3] == 1)
+            "status": 'done' if (mission[3] == 1) else 'pending' 
         }
         data['missions'].append(mission_data)
     

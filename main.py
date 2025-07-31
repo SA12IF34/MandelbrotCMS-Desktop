@@ -7,13 +7,13 @@ import os
 import authenticated
 import unauthenticated
 import general
-
+ 
 
 basedir = os.path.dirname(__file__)
 user_authenticated = False
 
 current_page = ''
-
+ 
 class Main:
     def __init__(self):
         global user_authenticated
@@ -77,8 +77,7 @@ class Main:
             self.login_btn.pack(side='left', pady=5)
             
 
-        Home(self.parent_container)
-        current_page='home'
+        self.nav_home()
 
     
     def clear_parent(self):
@@ -176,24 +175,23 @@ class Home:
         self.missions_container = ctk.CTkFrame(self.container, fg_color='transparent')
         self.missions_container.pack(fill='both')
 
-        if len(self.today_list['tasks']) == 0:
+        if len(self.today_list['missions']) == 0:
             self.list_title.configure(text="There is no created list for today.")       
-
-        for task in self.today_list['tasks']:
-            mission = ctk.CTkFrame(self.missions_container)
+        
+        for mission in self.today_list['missions']:
+            mission_frame = ctk.CTkFrame(self.missions_container)
             sep = ctk.CTkFrame(self.missions_container, height=1, bg_color=('gray15', 'white'))
-
-            mission_content = ctk.CTkLabel(mission, text=task['content'], text_color=('gray15', 'white'), font=('Arial', 16))
+            mission_content = ctk.CTkLabel(mission_frame, text=mission['content'], text_color=('gray15', 'white'), font=('Arial', 16))
             mission_content.pack(side='left', padx=20, pady=10)
 
-            checkbox = ctk.CTkCheckBox(mission,text='', width=1, height=1, border_width=2, corner_radius=100)
-            checkbox.configure(command=lambda m_id=task['id'], task=task: self.handle_update_mission(m_id, task))
+            checkbox = ctk.CTkCheckBox(mission_frame,text='', width=1, height=1, border_width=2, corner_radius=100)
+            checkbox.configure(command=lambda m_id=mission['id'], mission=mission: self.handle_update_mission(m_id, mission))
             
             checkbox.pack(side='right', padx=10, pady=10)
-            if task['done']:
+            if mission['status'] == 'done':
                 checkbox.select()
 
-            mission.pack(side='top', fill='x')
+            mission_frame.pack(side='top', fill='x')
             sep.pack(side='top', fill='x')
     
     
@@ -213,14 +211,17 @@ class Home:
 
     def handle_update_mission(self, mission_id, mission):
         global user_authenticated
+
+        statement = 'pending' if mission['status'] == 'done' else 'done'
+
         if user_authenticated:
-            response = authenticated.update_mission(mission_id, data={'done': not mission['done']})
+            response = authenticated.update_mission(mission_id, data={'status': statement})
             
         else:
-            response = unauthenticated.update_mission(mission_id, 'done', not mission['done'])
+            response = unauthenticated.update_mission(mission_id, 'status', statement)
 
         if response == 1:
-            mission['done'] = not mission['done']
+            mission['status'] = statement
 
 
 
@@ -243,6 +244,7 @@ class Lists:
 
     def handle_get_lists(self):
         global user_authenticated
+
         if user_authenticated:
             self.created_lists, self.keys = authenticated.get_lists()
         else:
@@ -356,21 +358,21 @@ class Login(Main):
         self.label = ctk.CTkLabel(self.container, text='Login', text_color=('gray15', 'white'), font=('Arial', 22))
         self.label.pack(anchor='nw')
 
-        self.username_input = ctk.CTkEntry(self.container, width=200, height=25, placeholder_text='username', font=('Arial', 14))
+        self.email_input = ctk.CTkEntry(self.container, width=200, height=25, placeholder_text='email', font=('Arial', 14))
         self.passsword_input = ctk.CTkEntry(self.container, show='*', width=200, height=25, placeholder_text='password', font=('Arial', 14))
 
         self.submit_btn = ctk.CTkButton(self.container, width=1, text='login', text_color=('gray15', 'white'), fg_color=('gray95', 'gray10'), font=('Arial', 16), command=self.handle_login)
 
-        self.username_input.pack(pady=10)
+        self.email_input.pack(pady=10)
         self.passsword_input.pack(pady=10)
         self.submit_btn.pack(anchor='center', pady=10)
 
 
     def handle_login(self):
-        username_content = self.username_input.get()
+        email_content = self.email_input.get()
         password_content = self.passsword_input.get()
 
-        response = unauthenticated.login(username_content, password_content)
+        response = unauthenticated.login(email_content, password_content)
 
         if type(response) == bool and response:
             global user_authenticated

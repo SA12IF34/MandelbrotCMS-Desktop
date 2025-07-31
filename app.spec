@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py', 'authenticated.py', 'unauthenticated.py', 'general.py'],
     pathex=[],
     binaries=[],
-    datas=[('mandelbrot.ico', '.'), ('db.db', '.')],
+    datas=[('mandelbrot.ico', '.'), ('db.db', '.'), ('.env', '.')],
     hiddenimports=['babel.numbers'],
     hookspath=[],
     hooksconfig={},

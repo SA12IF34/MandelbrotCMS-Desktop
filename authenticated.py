@@ -8,7 +8,7 @@ from general import resource_path
 basedir = os.path.dirname(__file__)
 db_path = os.path.join(basedir, 'db.db')
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(basedir, '.env'))
 
 access_token = None
 refresh_token = None
@@ -30,7 +30,7 @@ def set_creds():
         """)
 
         data_tuple = res.fetchone()
-
+       
         if data_tuple is None:
             return False
             
@@ -52,8 +52,8 @@ def set_creds():
     except sqlite3.OperationalError:
         return False
 
-
 def get_request_response(response):
+
     if response.status_code == 200:
         data = response.json()
 
@@ -70,11 +70,11 @@ def create_list(list_data, missions_data):
         
         global global_headers
         data = {
-            'container': list_data,
-            'tasks': missions_data
+            'list': list_data,
+            'missions': missions_data
         }
 
-        response = requests.post(f'{base_url}tasks/apis/new-task-list/',json=data, headers=global_headers)
+        response = requests.post(f'{base_url}missions/apis/lists/',json=data, headers=global_headers)
 
         if response.status_code == 201:
             return 1
@@ -88,7 +88,7 @@ def create_list(list_data, missions_data):
 def get_list(list_id):
     if access_token is not None:
         global global_headers
-        response = requests.get(f'{base_url}tasks/apis/get-tasks/{list_id}/', headers=global_headers)
+        response = requests.get(f'{base_url}missions/apis/lists/{list_id}/', headers=global_headers)
         
         return get_request_response(response)
 
@@ -96,7 +96,8 @@ def get_list(list_id):
 def get_lists():
     if access_token is not None:
         global global_headers
-        response = requests.get(f'{base_url}tasks/apis/get-containers/', headers=global_headers)
+
+        response = requests.get(f'{base_url}missions/apis/lists/', headers=global_headers)
 
         keys = {
             'list_id': 'id',
@@ -109,17 +110,18 @@ def get_lists():
 
 
 def get_today_list():
+
     if access_token is not None:
         global global_headers
         try:
             today_date = datetime.datetime.today().strftime('%Y-%m-%d')
-        
-            response = requests.get(f'{base_url}tasks/apis/today-tasks/{today_date}/', headers=global_headers)
-
+            
+            response = requests.get(f'{base_url}missions/apis/lists/today/{today_date}/', headers=global_headers)
+            
             if response.status_code == 200:
-                return response.json()['list']
+                return response.json()
             if response.status_code == 404:
-                return {'title': '', 'tasks': []}
+                return {'title': '', 'missions': []}
             if response.status_code == 403 or response.status_code == 401:
                 logout()
                 return -1
@@ -131,7 +133,7 @@ def get_today_list():
 def update_mission(mission_id, data):
     if access_token is not None:
         global global_headers
-        response = requests.patch(f'{base_url}tasks/apis/update-task/{mission_id}/', data=data, headers=global_headers)
+        response = requests.patch(f'{base_url}missions/apis/missions/{mission_id}/', data=data, headers=global_headers)
 
         if response.status_code == 202 or response.status_code == 200:
             return 1
@@ -143,7 +145,7 @@ def update_mission(mission_id, data):
 def delete_list(list_id):
     if access_token is not None:
         global global_headers
-        response = requests.delete(f'{base_url}tasks/apis/delete-container/{list_id}/', headers=global_headers)
+        response = requests.delete(f'{base_url}missions/apis/list/{list_id}/', headers=global_headers)
 
         if response.status_code == 204:
             return 1
