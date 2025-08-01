@@ -6,3 +6,6 @@ venv
 db.db
 mandelbrot.ico
 MandelbrotInstaller.exe
+
+installers
+installers/*
